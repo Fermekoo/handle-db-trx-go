@@ -1,0 +1,1 @@
+{"buildTargets":["cleantestcache","migratedown","migrateup","sqlc","test"],"launchTargets":[],"customConfigurationProvider":{"workspaceBrowse":{"browsePath":[],"compilerArgs":[]},"fileIndex":[]}}
