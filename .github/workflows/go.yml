@@ -41,6 +41,9 @@ jobs:
     - name: Check out code into the go module directory
       uses: actions/checkout@v2
 
+    - name: Set up app environment variable
+      run: cp app.env.example app.env
+
     - name: Setup golang migrate
       run: |
         curl -L https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz | tar xvz
