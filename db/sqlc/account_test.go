@@ -3,9 +3,10 @@ package db
 import (
 	"context"
 	"database/sql"
-	"simplebank/utils"
 	"testing"
 	"time"
+
+	"github.com/Fermekoo/handle-db-tx-go/utils"
 
 	"github.com/stretchr/testify/require"
 )

@@ -2,8 +2,9 @@ package db
 
 import (
 	"context"
-	"simplebank/utils"
 	"testing"
+
+	"github.com/Fermekoo/handle-db-tx-go/utils"
 
 	"github.com/stretchr/testify/require"
 )

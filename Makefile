@@ -16,4 +16,7 @@ cleantestcache:
 server:
 	go run main.go
 
-.PHONY: migrateup migratedown sqlc test cleantestcache server
+mock:
+	mockgen -package mockdb -destination db/mock/store.go github.com/Fermekoo/handle-db-tx-go/db/sqlc Store
+
+.PHONY: migrateup migratedown sqlc test cleantestcache server mock

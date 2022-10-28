@@ -3,9 +3,10 @@ package main
 import (
 	"database/sql"
 	"log"
-	"simplebank/api"
-	db "simplebank/db/sqlc"
-	"simplebank/utils"
+
+	"github.com/Fermekoo/handle-db-tx-go/api"
+	db "github.com/Fermekoo/handle-db-tx-go/db/sqlc"
+	"github.com/Fermekoo/handle-db-tx-go/utils"
 
 	_ "github.com/lib/pq"
 )
