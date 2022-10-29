@@ -41,3 +41,9 @@ func TestRandomCurrency(t *testing.T) {
 
 	require.NotEmpty(t, randomCurrency)
 }
+
+func TestRandomEmail(t *testing.T) {
+	email := RandomEmail()
+
+	require.NotEmpty(t, email)
+}

@@ -60,3 +60,12 @@ func RandomCurrency() string {
 
 	return currencies[rand.Intn(n)]
 }
+
+func RandomEmail() string {
+	name := RandomOwner()
+	domain_list := []string{"@gmail.com", "@yahoo.com"}
+	n := len(domain_list)
+	domain := domain_list[rand.Intn(n)]
+
+	return name + domain
+}

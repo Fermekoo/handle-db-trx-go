@@ -19,4 +19,7 @@ server:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/Fermekoo/handle-db-tx-go/db/sqlc Store
 
-.PHONY: migrateup migratedown sqlc test cleantestcache server mock
+createmigrate:
+	migrate create -ext sql -dir db/migrations -seq $(name)
+
+.PHONY: migrateup migratedown sqlc test cleantestcache server mock createmigrate
