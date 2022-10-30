@@ -4,8 +4,10 @@ import (
 	"net/http"
 
 	db "github.com/Fermekoo/handle-db-tx-go/db/sqlc"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 type Server struct {
@@ -20,6 +22,10 @@ func NewServer(store db.Store) *Server {
 
 	router := gin.Default()
 
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("currency", validCurrency)
+	}
+
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "simple bank api",
@@ -31,6 +37,8 @@ func NewServer(store db.Store) *Server {
 	router.PUT("/accounts", server.UdateAccount)
 	router.GET("/accounts/:id", server.GetAccount)
 	router.DELETE("/accounts/:id", server.DeleteAccount)
+
+	router.POST("/transfers", server.CreateTransfer)
 
 	server.router = router
 	return server
