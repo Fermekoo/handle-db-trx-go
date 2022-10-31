@@ -5,11 +5,13 @@ import (
 	"net/http"
 
 	db "github.com/Fermekoo/handle-db-tx-go/db/sqlc"
+	"github.com/lib/pq"
 
 	"github.com/gin-gonic/gin"
 )
 
 type CreateAccountRequest struct {
+	UserID   int64  `json:"user_id" binding:"required"`
 	Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,oneof=USD EUR IDR"`
 }
@@ -23,6 +25,7 @@ func (server *Server) CreateAccount(ctx *gin.Context) {
 	}
 
 	arg := db.CreateAccountParams{
+		UserID:   request.UserID,
 		Owner:    request.Owner,
 		Currency: request.Currency,
 		Balance:  0,
@@ -30,6 +33,13 @@ func (server *Server) CreateAccount(ctx *gin.Context) {
 	account, err := server.store.CreateAccount(ctx, arg)
 
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "foreign_key_violation", "unique_violation":
+				ctx.JSON(http.StatusBadRequest, errorResponse(err))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

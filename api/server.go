@@ -1,9 +1,12 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 
 	db "github.com/Fermekoo/handle-db-tx-go/db/sqlc"
+	"github.com/Fermekoo/handle-db-tx-go/token"
+	"github.com/Fermekoo/handle-db-tx-go/utils"
 	"github.com/go-playground/validator/v10"
 
 	"github.com/gin-gonic/gin"
@@ -11,21 +14,35 @@ import (
 )
 
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	config     utils.Config
+	store      db.Store
+	tokenMaker token.Maker
+	router     *gin.Engine
 }
 
-func NewServer(store db.Store) *Server {
-	server := &Server{
-		store: store,
+func NewServer(config utils.Config, store db.Store) (*Server, error) {
+
+	token_maker, err := token.NewPasetoMaker(config.TokenSymetricKey)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err)
 	}
 
-	router := gin.Default()
+	server := &Server{
+		config:     config,
+		store:      store,
+		tokenMaker: token_maker,
+	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
 	}
 
+	server.SetupRouter()
+	return server, nil
+}
+
+func (server *Server) SetupRouter() {
+	router := gin.Default()
 	router.GET("/", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "simple bank api",
@@ -40,8 +57,9 @@ func NewServer(store db.Store) *Server {
 
 	router.POST("/transfers", server.CreateTransfer)
 
+	router.POST("/register", server.Register)
+	router.POST("/login", server.Login)
 	server.router = router
-	return server
 }
 
 func (server *Server) Start(address string) error {

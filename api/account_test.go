@@ -18,10 +18,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAccount() db.Account {
+func createRandomAccount(t *testing.T) db.Account {
+	user, _ := createRandomUser(t)
 	account := db.Account{
 		ID:       utils.RandomInt(1, 1000),
-		Owner:    utils.RandomOwner(),
+		UserID:   user.ID,
+		Owner:    user.Username,
 		Balance:  utils.RandomMoney(),
 		Currency: utils.RandomCurrency(),
 	}
@@ -30,7 +32,7 @@ func createRandomAccount() db.Account {
 }
 
 func TestGetAccountAPI(t *testing.T) {
-	account := createRandomAccount()
+	account := createRandomAccount(t)
 
 	testCases := []struct {
 		name          string
@@ -102,7 +104,7 @@ func TestGetAccountAPI(t *testing.T) {
 			tc.buildStubs(store)
 
 			// start test server and send request
-			server := NewServer(store)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/accounts/%d", tc.accountID)
@@ -130,7 +132,7 @@ func requireBodyMatchAccount(t *testing.T, body *bytes.Buffer, account db.Accoun
 }
 
 func TestCreateAccountAPI(t *testing.T) {
-	account := createRandomAccount()
+	account := createRandomAccount(t)
 	testCases := []struct {
 		name          string
 		bodyRequest   gin.H
@@ -142,12 +144,14 @@ func TestCreateAccountAPI(t *testing.T) {
 			bodyRequest: gin.H{
 				"owner":    account.Owner,
 				"currency": account.Currency,
+				"user_id":  account.UserID,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				arg := db.CreateAccountParams{
 					Owner:    account.Owner,
 					Balance:  0,
 					Currency: account.Currency,
+					UserID:   account.UserID,
 				}
 				store.EXPECT().
 					CreateAccount(gomock.Any(), gomock.Eq(arg)).
@@ -213,7 +217,7 @@ func TestCreateAccountAPI(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := NewServer(store)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
 			url := "/accounts"

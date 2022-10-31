@@ -41,7 +41,7 @@ func RandomString(n int) string {
  * @return string
  */
 func RandomOwner() string {
-	return RandomString(int(RandomInt(1, 25)))
+	return RandomString(int(RandomInt(1, 50)))
 }
 
 /** RandomMonye generate a random amount of money
