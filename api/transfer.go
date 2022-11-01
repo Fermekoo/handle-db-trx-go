@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	db "github.com/Fermekoo/handle-db-tx-go/db/sqlc"
+	"github.com/Fermekoo/handle-db-tx-go/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,12 +24,19 @@ func (server *Server) CreateTransfer(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
-	if !server.validateAccount(ctx, request.FromAccountID, request.Currency) {
+	from_account, valid := server.validateAccount(ctx, request.FromAccountID, request.Currency)
+	if !valid {
 		return
 	}
 
-	if !server.validateAccount(ctx, request.ToAccountID, request.Currency) {
+	auth_payload := ctx.MustGet(authorization_payload_key).(*token.Payload)
+	if from_account.UserID != auth_payload.UserID {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(fmt.Errorf("invalid account")))
+		return
+	}
+
+	_, valid = server.validateAccount(ctx, request.ToAccountID, request.Currency)
+	if !valid {
 		return
 	}
 
@@ -48,23 +56,23 @@ func (server *Server) CreateTransfer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func (server *Server) validateAccount(ctx *gin.Context, accountID int64, currency string) bool {
+func (server *Server) validateAccount(ctx *gin.Context, accountID int64, currency string) (db.Account, bool) {
 	account, err := server.store.GetAccount(ctx, accountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return false
+			return account, false
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return false
+		return account, false
 	}
 
 	if account.Currency != currency {
 		err := fmt.Errorf("account %d currency mismatch %s vs %s", account.ID, account.Currency, currency)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return false
+		return account, false
 	}
 
-	return true
+	return account, true
 }

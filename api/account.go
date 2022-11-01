@@ -2,16 +2,17 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 
 	db "github.com/Fermekoo/handle-db-tx-go/db/sqlc"
+	"github.com/Fermekoo/handle-db-tx-go/token"
 	"github.com/lib/pq"
 
 	"github.com/gin-gonic/gin"
 )
 
 type CreateAccountRequest struct {
-	UserID   int64  `json:"user_id" binding:"required"`
 	Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,oneof=USD EUR IDR"`
 }
@@ -23,9 +24,9 @@ func (server *Server) CreateAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
+	auth_payload := ctx.MustGet(authorization_payload_key).(*token.Payload)
 	arg := db.CreateAccountParams{
-		UserID:   request.UserID,
+		UserID:   auth_payload.UserID,
 		Owner:    request.Owner,
 		Currency: request.Currency,
 		Balance:  0,
@@ -58,6 +59,8 @@ func (server *Server) GetAccount(ctx *gin.Context) {
 		return
 	}
 
+	auth_payload := ctx.MustGet(authorization_payload_key).(*token.Payload)
+
 	account, err := server.store.GetAccount(ctx, request.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -68,12 +71,17 @@ func (server *Server) GetAccount(ctx *gin.Context) {
 		return
 	}
 
+	if account.UserID != auth_payload.UserID {
+		ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("account not found")))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
 type ListAccountRequest struct {
 	PageID   int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=1,max=10"`
 }
 
 func (server *Server) ListAccount(ctx *gin.Context) {
@@ -83,7 +91,9 @@ func (server *Server) ListAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 	}
 
+	auth_payload := ctx.MustGet(authorization_payload_key).(*token.Payload)
 	arg := db.ListAccountsParams{
+		UserID: auth_payload.UserID,
 		Limit:  request.PageSize,
 		Offset: (request.PageID - 1) * request.PageSize,
 	}
