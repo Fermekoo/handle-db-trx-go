@@ -1,8 +1,8 @@
 migrateup:
-	migrate -path db/migrations -database "postgresql://postgres:SNNCMEDT9wcqLsqr1kE3@simplebank.cd59x4i5kne2.ap-southeast-1.rds.amazonaws.com:5432/simplebank" -verbose up
+	migrate -path db/migrations -database "postgresql://postgres:root@localhost:5432/simplebank?sslmode=disable" -verbose up
 
 migratedown:
-	migrate -path db/migrations -database "postgresql://postgres:SNNCMEDT9wcqLsqr1kE3@simplebank.cd59x4i5kne2.ap-southeast-1.rds.amazonaws.com:5432/simplebank" -verbose down 
+	migrate -path db/migrations -database "postgresql://postgres:root@localhost:5432/simplebank?sslmode=disable" -verbose down 
 
 sqlc:
 	sqlc generate
