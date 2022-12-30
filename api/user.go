@@ -8,6 +8,7 @@ import (
 	db "github.com/Fermekoo/handle-db-tx-go/db/sqlc"
 	"github.com/Fermekoo/handle-db-tx-go/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
 
@@ -80,8 +81,12 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccessToken string       `json:"access_token"`
-	User        UserResponse `json:"user"`
+	SessionID             uuid.UUID    `json:"session_id"`
+	AccessToken           string       `json:"access_token"`
+	AccessTokenExpiresAt  time.Time    `json:"access_token_expires_at"`
+	RefreshToken          string       `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time    `json:"refresh_token_expires_at"`
+	User                  UserResponse `json:"user"`
 }
 
 func (server *Server) Login(ctx *gin.Context) {
@@ -104,17 +109,42 @@ func (server *Server) Login(ctx *gin.Context) {
 		return
 	}
 
-	token, err := server.tokenMaker.CreateToken(user.ID, server.config.AccessTokenDuration)
+	token, access_payload, err := server.tokenMaker.CreateToken(user.ID, server.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(fmt.Errorf("email or password incorrect")))
+		return
+	}
+
+	refresh_token, refresh_payload, err := server.tokenMaker.CreateToken(user.ID, server.config.RefreshTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(fmt.Errorf("email or password incorrect")))
+		return
+	}
+
+	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
+		ID:           refresh_payload.ID,
+		UserID:       refresh_payload.UserID,
+		RefreshToken: refresh_token,
+		UserAgent:    ctx.Request.UserAgent(),
+		ClientIp:     ctx.ClientIP(),
+		IsBlocked:    false,
+		ExpiresAt:    refresh_payload.ExpiredAt,
+	})
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	userResponse := userResponse(user)
 
 	response := LoginResponse{
-		AccessToken: token,
-		User:        userResponse,
+		SessionID:             session.ID,
+		AccessToken:           token,
+		AccessTokenExpiresAt:  access_payload.ExpiredAt,
+		RefreshToken:          refresh_token,
+		RefreshTokenExpiresAt: refresh_payload.ExpiredAt,
+		User:                  userResponse,
 	}
 
 	ctx.JSON(http.StatusOK, response)
