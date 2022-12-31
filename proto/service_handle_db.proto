@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pb;
+
+import "rpc_create_user.proto";
+import "rpc_login_user.proto";
+
+option go_package ="github.com/Fermekoo/handle-db-tx-go/pb";
+
+service HandleDB {
+    rpc Register (RegisterRequest) returns (UserResponse) {}
+    rpc Login (LoginRequest) returns (LoginResponse) {}
+}

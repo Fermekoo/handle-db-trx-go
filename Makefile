@@ -25,4 +25,10 @@ createmigrate:
 postgres:
 	docker run --name postgresdb -p 5432:5432 --network db-trx-go-network -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=root -d postgres
 
-.PHONY: migrateup migratedown sqlc test cleantestcache server mock createmigrate postgres
+proto:
+	rm -f pb/*.go
+	protoc --proto_path=proto --go_out=pb --go_opt=paths=source_relative \
+    --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
+    proto/*.proto
+
+.PHONY: migrateup migratedown sqlc test cleantestcache server mock createmigrate postgres proto
